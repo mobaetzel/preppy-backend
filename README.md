@@ -2,7 +2,7 @@
 
 Mealprep Service.
 
-[API Defintion](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/mobaetzel/preppy-backend/api/swagger.yml)
+[API Defintion](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/mobaetzel/preppy-backend/main/api/swagger.yml)
 
 # Requirements
 * docker

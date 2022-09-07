@@ -1,0 +1,22 @@
+version: '3.1'
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: preppy
+      MONGO_INITDB_ROOT_PASSWORD: preppy-password
+  preppy:
+    build: .
+    restart: always
+    depends_on:
+      - mongo
+    environment:
+      DB_HOST: mongo
+      DB_PORT: 27017
+      DB_USERNAME: preppy
+      DB_PASSWORD: preppy-password
+      DB_DATABASE: preppy
+    ports:
+      - "8000:8000"

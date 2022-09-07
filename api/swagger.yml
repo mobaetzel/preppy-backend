@@ -1,0 +1,547 @@
+openapi: 3.0.3
+info:
+  title: Preppy Backend
+  description: This is the API specification for the Preppy Backend Service.
+  contact:
+    email: finn.baetzel@aivot.de
+  license:
+    name: MIT
+  version: 1.0.0
+tags:
+  - name: auth
+    description: Everything related to authentication
+  - name: recipe
+    description: Everything related to recipes
+  - name: user
+    description: Operations related to users
+paths:
+  /v1/auth/login:
+    post:
+      tags:
+        - auth
+      summary: Authenticate with a username and password
+      description: |
+        Use this endpoint for authentication.
+        You will receive an access token to access the api with as well as an refresh token to generate enw access tokens.
+        Additionally you will receive the id of the authenticated user.
+        Use this id to fetch the data of the user.
+      requestBody:
+        description: Your username and password
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+        required: true
+      responses:
+        '200':
+          description: Authentication successfull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwt'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          description: Unauthorized - The combination of username and password does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/auth/refresh:
+    get:
+      tags:
+        - auth
+      summary: Get a new access token
+      description: |
+        Get a new access token for accessing the api.
+        Only fetch this endpoint, when the old access token has expired. 
+        Provide the refresh token in the authorization header of the request.
+      responses:
+        '200':
+          description: Refresh successfull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwt'
+        '401':
+          description: Unauthorized - The submitted refresh token was invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/recipes:
+    get:
+      tags:
+        - recipe
+      summary: Get a list of all recipes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: The limit of recipes to fetch
+          required: false
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: The page of the recipes list to display
+          required: false
+          schema:
+            type: integer
+        - name: search
+          in: query
+          description: Serach for a recipe by its title
+          required: false
+          schema:
+            type: string
+        - name: author-id
+          in: query
+          description: List recipes for author
+          required: false
+          schema:
+            type: string
+        - name: tag
+          in: query
+          description: Tag to filter for
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List successfully fetched
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Recipe'
+                required:
+                  - total
+                  - items
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags:
+        - recipe
+      summary: Create a new recipe
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: The new recipe object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+      responses:
+        '201':
+          description: Recipe successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /v1/recipes/{recipeId}:
+    get:
+      tags:
+        - recipe
+      summary: Retrieve a single recipe
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          schema:
+            type: string
+          required: true
+          description: Id of the recipe to retrieve
+      responses:
+        '200':
+          description: Successfully retrieved recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - recipe
+      summary: Update a single recipe
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          schema:
+            type: string
+          required: true
+          description: Id of the recipe to update
+      requestBody:
+        description: The updated recipe object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+      responses:
+        '200':
+          description: The successfully updated recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - recipe
+      summary: Delete a single recipe
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: recipeId
+          in: path
+          schema:
+            type: string
+          required: true
+          description: Id of the recipe to delete
+      responses:
+        '204':
+          description: Successfully deleted recipe
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/users:
+    get:
+      tags:
+        - user
+      summary: Get a list of all users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: The limit of users to fetch
+          required: false
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: The page of the users list to display
+          required: false
+          schema:
+            type: integer
+        - name: search
+          in: query
+          description: Serach for a user by its username
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List successfully fetched
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                required:
+                  - total
+                  - items
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags:
+        - user
+      summary: Create a new user
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: The new user object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/users/{userId}:
+    get:
+      tags:
+        - user
+      summary: Retrieve a single user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          schema:
+            type: string
+          required: true
+          description: Id of the user to retrieve
+      responses:
+        '200':
+          description: Successfully retrieved user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - user
+      summary: Update a single user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          schema:
+            type: string
+          required: true
+          description: Id of the user to update
+      requestBody:
+        description: The updated user object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: The successfully updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - user
+      summary: Delete a single user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          schema:
+            type: string
+          required: true
+          description: Id of the user to delete
+      responses:
+        '204':
+          description: Successfully deleted user
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+      required:
+        - status
+        - message
+    Credentials:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+      required:
+        - username
+        - password
+    Jwt:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        userId:
+          type: string
+      required:
+        - accessToken
+        - refreshToken
+        - userId
+    Recipe:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        title:
+          type: string
+        description:
+          type: string
+        instructions:
+          type: string
+        servings:
+          type: integer
+        caloriesPerServing:
+          type: integer
+        authorId: 
+          type: string
+        ingredients:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              amount:
+                type: number
+              unit:
+                type: string
+                enum:
+                  - TeaSpoon
+                  - TableSpoon
+                  - Milligram
+                  - Gram
+                  - Kilogram
+                  - Millilitre
+                  - Decilitre
+                  - Litre
+                  - Cup
+                  - ''
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - Vegan
+            - Vegetarian
+            - GlutenFree
+            - LactoseFree
+            - Fish
+            - RedMeat
+            - Chicken
+            - LowCarb
+            - HighCarb
+            - HighProtein
+            - Asian
+        created:
+          type: string
+          format: datetime
+          readOnly: true
+        updated:
+          type: string
+          format: datetime
+          readOnly: true
+      required:
+        - id
+        - title
+        - description
+        - instructions
+        - servings
+        - caloriesPerServing
+        - authorId
+        - ingredients
+        - tags
+        - created
+        - updated
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+          writeOnly: true
+        isAdmin:
+          type: boolean
+        isDeleted:
+          type: boolean
+      required:
+        - id
+        - username
+        - password
+        - isAdmin
+        - isDeleted
+  responses:
+    BadRequestError:
+      description: Bad request - Submitted object did not match required schema
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnauthorizedError:
+      description: Unauthorized - No valid access token or expired access token submitted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ForbiddenError:
+      description: Forbidden - You are not allowed to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFoundError:
+      description: Not found - The requested resource could not be found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
